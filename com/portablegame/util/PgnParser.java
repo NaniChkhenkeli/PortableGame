@@ -1,13 +1,14 @@
 package com.portablegame.util;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
 public class PgnParser {
 
     public static void main(String[] args) throws IOException {
-        String pgnPath = "com/portablegame/util/PgnParser.java"; // Corrected path if the folder is named 'resources'
+        String pgnPath = "com/portablegame/resources/pgn/PolgarJ.pgn";
 
         List<String> games = parseGamesFromFile(pgnPath);
 
@@ -32,7 +33,8 @@ public class PgnParser {
     }
 
     public static List<String> parseGamesFromFile(String path) throws IOException {
-        String content = Files.readString(Path.of(path));
+
+        String content = Files.readString(Path.of(path), StandardCharsets.ISO_8859_1);
         String[] games = content.split("(?=\\[Event )");
         return Arrays.asList(games);
     }
@@ -45,7 +47,6 @@ public class PgnParser {
                 moves.append(line).append(" ");
             }
         }
-        // Remove result and move numbers
         String cleaned = moves.toString()
                 .replaceAll("\\d+\\.", "")
                 .replaceAll("\\{[^}]*\\}", "")
@@ -102,7 +103,6 @@ public class PgnParser {
     // ---------------- Move Validator (Stub) ----------------
     static class MoveValidator {
         public static boolean isValidMove(Board board, String move, boolean isWhite) {
-            // Stub: validate based on current board state
             return true;
         }
     }
