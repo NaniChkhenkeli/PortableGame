@@ -6,30 +6,39 @@ public class Pawn extends Piece {
     }
 
     @Override
-    public boolean isValidMove(int targetRow, int targetCol) {
-        int direction = isWhite() ? -1 : 1;
-        int startRow = isWhite() ? 6 : 1;
+    public boolean isValidMove(int toRow, int toCol) {
+        int direction = color.equals("white") ? -1 : 1;
+        int startRow = color.equals("white") ? 6 : 1;
 
-        // Forward move
-        if (targetCol == col) {
-            if (targetRow == row + direction) {
-                return board.getPieceAt(targetRow, targetCol) == null;
-            } else if (row == startRow && targetRow == row + 2 * direction) {
-                return board.getPieceAt(row + direction, col) == null &&
-                        board.getPieceAt(targetRow, targetCol) == null;
+        // Forward move (1 square)
+        if (col == toCol && board.getPieceAt(toRow, toCol) == null) {
+            if (toRow == row + direction) return true;
+
+            // Double move from starting position
+            if (row == startRow && toRow == row + 2 * direction &&
+                    board.getPieceAt(row + direction, col) == null) {
+                return true;
             }
         }
-        // Capture move
-        else if (Math.abs(targetCol - col) == 1 && targetRow == row + direction) {
-            Piece targetPiece = board.getPieceAt(targetRow, targetCol);
-            return targetPiece != null && !targetPiece.color.equals(color);
-        }
 
+        // Capture (including en passant)
+        if (Math.abs(col - toCol) == 1 && toRow == row + direction) {
+            // Normal capture
+            if (isOpponent(board.getPieceAt(toRow, toCol))) return true;
+
+            // En passant
+            String epTarget = board.getEnPassantTarget();
+            if (epTarget != null &&
+                    toRow == (color.equals("white") ? 2 : 5) &&
+                    toCol == (epTarget.charAt(0) - 'a')) {
+                return true;
+            }
+        }
         return false;
     }
 
     @Override
     public String getSymbol() {
-        return isWhite() ? "♙" : "♟";
+        return color.equals("white") ? "♙" : "♟";
     }
 }

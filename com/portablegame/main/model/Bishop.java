@@ -6,32 +6,23 @@ public class Bishop extends Piece {
     }
 
     @Override
-    public boolean isValidMove(int targetRow, int targetCol) {
-        int rowDiff = Math.abs(targetRow - row);
-        int colDiff = Math.abs(targetCol - col);
-        if (rowDiff == colDiff) {
-            int rowStep = targetRow > row ? 1 : -1;
-            int colStep = targetCol > col ? 1 : -1;
+    public boolean isValidMove(int toRow, int toCol) {
+        int rowDiff = Math.abs(toRow - row);
+        int colDiff = Math.abs(toCol - col);
 
-            int r = row + rowStep;
-            int c = col + colStep;
+        // Must move diagonally
+        if (rowDiff != colDiff) return false;
 
-            while (r != targetRow && c != targetCol) {
-                if (board.getPieceAt(r, c) != null) {
-                    return false;
-                }
-                r += rowStep;
-                c += colStep;
-            }
+        // Check path is clear
+        if (!board.isPathClear(row, col, toRow, toCol)) return false;
 
-            Piece targetPiece = board.getPieceAt(targetRow, targetCol);
-            return targetPiece == null || !targetPiece.color.equals(color);
-        }
-        return false;
+        // Check target square
+        Piece target = board.getPieceAt(toRow, toCol);
+        return target == null || isOpponent(target);
     }
 
     @Override
     public String getSymbol() {
-        return isWhite() ? "♗" : "♝";
+        return color.equals("white") ? "♗" : "♝";
     }
 }

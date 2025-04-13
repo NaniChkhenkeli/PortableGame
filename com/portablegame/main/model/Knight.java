@@ -6,20 +6,21 @@ public class Knight extends Piece {
     }
 
     @Override
-    public boolean isValidMove(int targetRow, int targetCol) {
-        int rowDiff = Math.abs(targetRow - row);
-        int colDiff = Math.abs(targetCol - col);
+    public boolean isValidMove(int toRow, int toCol) {
+        int rowDiff = Math.abs(toRow - row);
+        int colDiff = Math.abs(toCol - col);
 
-        Piece targetPiece = board.getPieceAt(targetRow, targetCol);
-        if (targetPiece != null && targetPiece.color.equals(color)) {
-            return false;
-        }
+        // L-shaped move
+        boolean isValidKnightMove = (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
+        if (!isValidKnightMove) return false;
 
-        return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
+        // Check target square
+        Piece target = board.getPieceAt(toRow, toCol);
+        return target == null || isOpponent(target);
     }
 
     @Override
     public String getSymbol() {
-        return isWhite() ? "♘" : "♞";
+        return color.equals("white") ? "♘" : "♞";
     }
 }

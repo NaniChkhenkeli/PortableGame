@@ -4,36 +4,43 @@ import java.util.*;
 import java.util.regex.*;
 
 public class PgnParser {
-    private static final Pattern HEADER_PATTERN = Pattern.compile("\\[(\\w+)\\s+\"(.+)\"\\]");
-    private static final Pattern MOVE_NUMBER_PATTERN = Pattern.compile("\\d+\\.");
+    private static final Pattern HEADER_PATTERN = Pattern.compile("^\\[(\\w+)\\s+\"([^\"]*)\"\\]$");
     private static final Pattern MOVE_PATTERN = Pattern.compile(
-            "([KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](=[QRBN])?[+#]?|O-O(?:-O)?[+#]?)"
+            "^(?<moveNum>\\d+\\.\\s*)?" +
+                    "(?<move>(?<piece>[KQRBN])?(?<disambig>[a-h1-8])?(?<capture>x)?" +
+                    "(?<target>[a-h][1-8])(?<promo>=[QRBN])?(?<check>[+#])?|" +
+                    "(?<castle>O-O(?:-O)?[+#]?))" +
+                    "(?<annotation>\\s*[!?]{1,2})?"
     );
 
-    public static ParseResult parseGame(String pgnText) {
+    public static ParseResult parseGame(String gameText) {
         ParseResult result = new ParseResult();
-        String[] lines = pgnText.split("\n");
-        boolean inMoveSection = false;
-        List<String> moveTokens = new ArrayList<>();
+        String[] lines = gameText.split("\\r?\\n");
+        boolean inHeader = true;
+        StringBuilder movesText = new StringBuilder();
 
-        // Process each line
         for (String line : lines) {
             line = line.trim();
             if (line.isEmpty()) continue;
 
             if (line.startsWith("[")) {
-                // Header line
-                inMoveSection = false;
+                if (!inHeader) {
+                    result.addError("Header tags must appear before move text");
+                }
                 parseHeader(line, result);
             } else {
-                // Move text line
-                inMoveSection = true;
-                parseMoveText(line, result, moveTokens);
+                inHeader = false;
+                movesText.append(line).append(" ");
             }
         }
 
-        // Process the collected move tokens
-        processMoveTokens(moveTokens, result);
+        if (inHeader) {
+            result.addError("No moves found in game");
+        } else {
+            parseMoveText(movesText.toString(), result);
+        }
+
+        validateRequiredHeaders(result);
         return result;
     }
 
@@ -44,32 +51,50 @@ public class PgnParser {
             String value = matcher.group(2);
             result.headers.put(tag, value);
         } else {
-            result.addError("Invalid header format: " + line);
+            result.addError("Malformed header: " + line);
         }
     }
 
-    private static void parseMoveText(String line, ParseResult result, List<String> moveTokens) {
-        // Remove comments
-        line = line.replaceAll("\\{.*?\\}", "").trim();
+    private static void parseMoveText(String movesText, ParseResult result) {
+        // Remove comments and variations
+        String cleaned = movesText
+                .replaceAll("\\{.*?\\}", "")
+                .replaceAll("\\(.*?\\)", "")
+                .replaceAll("\\s+", " ")
+                .trim();
+
         // Split into tokens
-        String[] tokens = line.split("\\s+");
+        String[] tokens = cleaned.split("(?<=\\s)(?=\\d+\\.)|\\s+");
 
+        int expectedMoveNumber = 1;
         for (String token : tokens) {
-            if (token.isEmpty()) continue;
-            if (MOVE_NUMBER_PATTERN.matcher(token).matches()) continue;
-
-            moveTokens.add(token);
+            if (token.matches("\\d+\\.+")) {
+                int actualMoveNum = Integer.parseInt(token.replace(".", ""));
+                if (actualMoveNum != expectedMoveNumber) {
+                    result.addError("Unexpected move number: " + token +
+                            " (expected " + expectedMoveNumber + ")");
+                }
+                expectedMoveNumber++;
+            }
+            else if (token.matches("1-0|0-1|1/2-1/2|\\*")) {
+                result.result = token;
+            }
+            else if (!token.isEmpty()) {
+                Matcher moveMatcher = MOVE_PATTERN.matcher(token);
+                if (moveMatcher.matches()) {
+                    result.moves.add(token);
+                } else {
+                    result.addError("Invalid move syntax: " + token);
+                }
+            }
         }
     }
 
-    private static void processMoveTokens(List<String> moveTokens, ParseResult result) {
-        for (String token : moveTokens) {
-            if (token.matches("1-0|0-1|1/2-1/2|\\*")) {
-                result.result = token;
-            } else if (!MOVE_PATTERN.matcher(token).matches()) {
-                result.addError("Invalid move syntax: " + token);
-            } else {
-                result.moves.add(token);
+    private static void validateRequiredHeaders(ParseResult result) {
+        String[] requiredHeaders = {"Event", "Site", "Date", "Round", "White", "Black", "Result"};
+        for (String header : requiredHeaders) {
+            if (!result.headers.containsKey(header)) {
+                result.addError("Missing required header: [" + header + "]");
             }
         }
     }

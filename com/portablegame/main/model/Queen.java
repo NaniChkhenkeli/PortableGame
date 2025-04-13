@@ -6,17 +6,19 @@ public class Queen extends Piece {
     }
 
     @Override
-    public boolean isValidMove(int targetRow, int targetCol) {
-        boolean isStraight = targetRow == row || targetCol == col;
-        boolean isDiagonal = Math.abs(targetRow - row) == Math.abs(targetCol - col);
+    public boolean isValidMove(int toRow, int toCol) {
+        int rowDiff = Math.abs(toRow - row);
+        int colDiff = Math.abs(toCol - col);
 
-        if (isStraight || isDiagonal) {
-            if (isPathClear(targetRow, targetCol)) {
-                Piece targetPiece = board.getPieceAt(targetRow, targetCol);
-                return targetPiece == null || !targetPiece.color.equals(color);
-            }
-        }
-        return false;
+        // Must move in straight line or diagonal
+        if (!(rowDiff == 0 || colDiff == 0 || rowDiff == colDiff)) return false;
+
+        // Check path is clear
+        if (!board.isPathClear(row, col, toRow, toCol)) return false;
+
+        // Check target square
+        Piece target = board.getPieceAt(toRow, toCol);
+        return target == null || isOpponent(target);
     }
 
     @Override

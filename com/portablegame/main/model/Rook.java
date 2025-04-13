@@ -6,14 +6,16 @@ public class Rook extends Piece {
     }
 
     @Override
-    public boolean isValidMove(int targetRow, int targetCol) {
-        if (targetRow == row || targetCol == col) {
-            if (isPathClear(targetRow, targetCol)) {
-                Piece targetPiece = board.getPieceAt(targetRow, targetCol);
-                return targetPiece == null || !targetPiece.color.equals(color);
-            }
-        }
-        return false;
+    public boolean isValidMove(int toRow, int toCol) {
+        // Must move in straight line
+        if (row != toRow && col != toCol) return false;
+
+        // Check path is clear
+        if (!board.isPathClear(row, col, toRow, toCol)) return false;
+
+        // Check target square
+        Piece target = board.getPieceAt(toRow, toCol);
+        return target == null || isOpponent(target);
     }
 
     @Override
