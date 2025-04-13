@@ -23,4 +23,9 @@ public class Knight extends Piece {
     public String getSymbol() {
         return color.equals("white") ? "♘" : "♞";
     }
+
+    @Override
+    public String getFENSymbol() {
+        return color.equals("white") ? "N" : "n";
+    }
 }

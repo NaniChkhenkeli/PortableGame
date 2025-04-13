@@ -22,4 +22,9 @@ public class Rook extends Piece {
     public String getSymbol() {
         return color.equals("white") ? "♖" : "♜";
     }
+
+    @Override
+    public String getFENSymbol() {
+        return color.equals("white") ? "R" : "r";
+    }
 }

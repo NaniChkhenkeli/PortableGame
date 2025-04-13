@@ -12,6 +12,8 @@ public abstract class Piece {
         this.col = col;
         this.board = board;
     }
+    public abstract String getFENSymbol();
+
 
     public abstract boolean isValidMove(int toRow, int toCol);
     public abstract String getSymbol();

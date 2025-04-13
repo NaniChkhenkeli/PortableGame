@@ -1,6 +1,6 @@
 package com.portablegame.main.model;
 
-import com.portablegame.util.PgnGameValidator;
+import com.portablegame.util.PgnValidator;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +30,12 @@ public class Main {
     }
 
     private static void startInteractiveMode() {
-        Board board = new Board();
+        Board board = new Board() {
+            @Override
+            public String getFENSymbol() {
+                return "";
+            }
+        };
         System.out.println("\nInteractive Chess Board - Enter moves as 'e2 e4' or 'quit'");
 
         while (true) {
@@ -89,7 +94,7 @@ public class Main {
                 return;
             }
 
-            PgnGameValidator validator = new PgnGameValidator();
+            PgnValidator validator = new PgnValidator();
             validator.validatePgnFile(filePath);
         } catch (IOException e) {
             System.out.println("Error reading file: " + e.getMessage());

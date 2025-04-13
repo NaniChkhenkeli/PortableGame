@@ -1,6 +1,6 @@
 package com.portablegame.main.model;
 
-// MoveValidation.java
+
 import java.util.ArrayList;
 import java.util.List;
 
