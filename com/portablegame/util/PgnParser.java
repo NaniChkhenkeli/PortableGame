@@ -1,109 +1,91 @@
 package com.portablegame.util;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.util.*;
+import java.util.regex.*;
 
 public class PgnParser {
+    private static final Pattern HEADER_PATTERN = Pattern.compile("\\[(\\w+)\\s+\"(.+)\"\\]");
+    private static final Pattern MOVE_NUMBER_PATTERN = Pattern.compile("\\d+\\.");
+    private static final Pattern MOVE_PATTERN = Pattern.compile(
+            "([KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](=[QRBN])?[+#]?|O-O(?:-O)?[+#]?)"
+    );
 
-    public static void main(String[] args) throws IOException {
-        String pgnPath = "com/portablegame/resources/pgn/PolgarJ.pgn";
+    public static ParseResult parseGame(String pgnText) {
+        ParseResult result = new ParseResult();
+        String[] lines = pgnText.split("\n");
+        boolean inMoveSection = false;
+        List<String> moveTokens = new ArrayList<>();
 
-        List<String> games = parseGamesFromFile(pgnPath);
-
-        for (String game : games) {
-            System.out.println("=== New Game ===");
-            List<String> moves = extractMoves(game);
-
-            Board board = new Board();
-            board.printBoard();
-
-            boolean whiteToMove = true;
-
-            for (String move : moves) {
-                System.out.println((whiteToMove ? "White" : "Black") + " plays: " + move);
-                // Placeholder: apply move to board
-                // boolean isValid = MoveValidator.isValidMove(board, move, whiteToMove);
-                // board.applyMove(move, whiteToMove);
-
-                whiteToMove = !whiteToMove;
-            }
-        }
-    }
-
-    public static List<String> parseGamesFromFile(String path) throws IOException {
-
-        String content = Files.readString(Path.of(path), StandardCharsets.ISO_8859_1);
-        String[] games = content.split("(?=\\[Event )");
-        return Arrays.asList(games);
-    }
-
-    public static List<String> extractMoves(String gameText) {
-        String[] lines = gameText.split("\n");
-        StringBuilder moves = new StringBuilder();
+        // Process each line
         for (String line : lines) {
-            if (!line.startsWith("[")) {
-                moves.append(line).append(" ");
+            line = line.trim();
+            if (line.isEmpty()) continue;
+
+            if (line.startsWith("[")) {
+                // Header line
+                inMoveSection = false;
+                parseHeader(line, result);
+            } else {
+                // Move text line
+                inMoveSection = true;
+                parseMoveText(line, result, moveTokens);
             }
         }
-        String cleaned = moves.toString()
-                .replaceAll("\\d+\\.", "")
-                .replaceAll("\\{[^}]*\\}", "")
-                .replaceAll("\\s+", " ")
-                .trim();
 
-        String[] moveArray = cleaned.split(" ");
-        List<String> moveList = new ArrayList<>();
-
-        for (String move : moveArray) {
-            if (move.matches("1-0|0-1|1/2-1/2")) continue;
-            moveList.add(move);
-        }
-
-        return moveList;
+        // Process the collected move tokens
+        processMoveTokens(moveTokens, result);
+        return result;
     }
 
-    // ---------------- Board Class ----------------
-    static class Board {
-        private final String[][] board;
-
-        public Board() {
-            board = new String[8][8];
-            setupInitialPosition();
-        }
-
-        private void setupInitialPosition() {
-            String[] backRank = {"RO", "KN", "BI", "QU", "KI", "BI", "KN", "RO"};
-            for (int i = 0; i < 8; i++) {
-                board[0][i] = "B" + backRank[i];
-                board[1][i] = "BPA";
-                board[6][i] = "WPA";
-                board[7][i] = "W" + backRank[i];
-            }
-
-            for (int i = 2; i <= 5; i++) {
-                Arrays.fill(board[i], "--");
-            }
-        }
-
-        public void printBoard() {
-            System.out.println("Initial Chess Board Setup:\n");
-            for (int i = 7; i >= 0; i--) {
-                System.out.print((i + 1) + "  ");
-                for (int j = 0; j < 8; j++) {
-                    System.out.print(board[i][j] + " ");
-                }
-                System.out.println();
-            }
-            System.out.println("\n    a   b   c   d   e   f   g   h\n");
+    private static void parseHeader(String line, ParseResult result) {
+        Matcher matcher = HEADER_PATTERN.matcher(line);
+        if (matcher.matches()) {
+            String tag = matcher.group(1);
+            String value = matcher.group(2);
+            result.headers.put(tag, value);
+        } else {
+            result.addError("Invalid header format: " + line);
         }
     }
 
-    // ---------------- Move Validator (Stub) ----------------
-    static class MoveValidator {
-        public static boolean isValidMove(Board board, String move, boolean isWhite) {
-            return true;
+    private static void parseMoveText(String line, ParseResult result, List<String> moveTokens) {
+        // Remove comments
+        line = line.replaceAll("\\{.*?\\}", "").trim();
+        // Split into tokens
+        String[] tokens = line.split("\\s+");
+
+        for (String token : tokens) {
+            if (token.isEmpty()) continue;
+            if (MOVE_NUMBER_PATTERN.matcher(token).matches()) continue;
+
+            moveTokens.add(token);
+        }
+    }
+
+    private static void processMoveTokens(List<String> moveTokens, ParseResult result) {
+        for (String token : moveTokens) {
+            if (token.matches("1-0|0-1|1/2-1/2|\\*")) {
+                result.result = token;
+            } else if (!MOVE_PATTERN.matcher(token).matches()) {
+                result.addError("Invalid move syntax: " + token);
+            } else {
+                result.moves.add(token);
+            }
+        }
+    }
+
+    public static class ParseResult {
+        public Map<String, String> headers = new LinkedHashMap<>();
+        public List<String> moves = new ArrayList<>();
+        public List<String> errors = new ArrayList<>();
+        public String result;
+
+        public boolean hasErrors() {
+            return !errors.isEmpty();
+        }
+
+        public void addError(String error) {
+            errors.add(error);
         }
     }
 }

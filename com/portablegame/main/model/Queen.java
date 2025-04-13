@@ -7,10 +7,16 @@ public class Queen extends Piece {
 
     @Override
     public boolean isValidMove(int targetRow, int targetCol) {
-        Rook rook = new Rook(color, row, col, board);
-        Bishop bishop = new Bishop(color, row, col, board);
+        boolean isStraight = targetRow == row || targetCol == col;
+        boolean isDiagonal = Math.abs(targetRow - row) == Math.abs(targetCol - col);
 
-        return rook.isValidMove(targetRow, targetCol) || bishop.isValidMove(targetRow, targetCol);
+        if (isStraight || isDiagonal) {
+            if (isPathClear(targetRow, targetCol)) {
+                Piece targetPiece = board.getPieceAt(targetRow, targetCol);
+                return targetPiece == null || !targetPiece.color.equals(color);
+            }
+        }
+        return false;
     }
 
     @Override

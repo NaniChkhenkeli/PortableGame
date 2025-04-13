@@ -10,11 +10,16 @@ public class Knight extends Piece {
         int rowDiff = Math.abs(targetRow - row);
         int colDiff = Math.abs(targetCol - col);
 
+        Piece targetPiece = board.getPieceAt(targetRow, targetCol);
+        if (targetPiece != null && targetPiece.color.equals(color)) {
+            return false;
+        }
+
         return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
     }
 
     @Override
     public String getSymbol() {
-        return color.equals("white") ? "♘" : "♞";
+        return isWhite() ? "♘" : "♞";
     }
 }

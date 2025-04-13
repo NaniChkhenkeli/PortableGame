@@ -7,18 +7,19 @@ public class Pawn extends Piece {
 
     @Override
     public boolean isValidMove(int targetRow, int targetCol) {
-        int direction = color.equals("white") ? -1 : 1;
-        int startRow = color.equals("white") ? 6 : 1;
+        int direction = isWhite() ? -1 : 1;
+        int startRow = isWhite() ? 6 : 1;
 
+        // Forward move
         if (targetCol == col) {
             if (targetRow == row + direction) {
                 return board.getPieceAt(targetRow, targetCol) == null;
-            }
-            else if (row == startRow && targetRow == row + 2 * direction) {
-                return board.getPieceAt(targetRow, targetCol) == null &&
-                        board.getPieceAt(row + direction, col) == null;
+            } else if (row == startRow && targetRow == row + 2 * direction) {
+                return board.getPieceAt(row + direction, col) == null &&
+                        board.getPieceAt(targetRow, targetCol) == null;
             }
         }
+        // Capture move
         else if (Math.abs(targetCol - col) == 1 && targetRow == row + direction) {
             Piece targetPiece = board.getPieceAt(targetRow, targetCol);
             return targetPiece != null && !targetPiece.color.equals(color);
@@ -29,6 +30,6 @@ public class Pawn extends Piece {
 
     @Override
     public String getSymbol() {
-        return color.equals("white") ? "♙" : "♟";
+        return isWhite() ? "♙" : "♟";
     }
 }

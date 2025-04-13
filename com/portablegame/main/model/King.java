@@ -10,11 +10,16 @@ public class King extends Piece {
         int rowDiff = Math.abs(targetRow - row);
         int colDiff = Math.abs(targetCol - col);
 
-        return (rowDiff <= 1 && colDiff <= 1);
+        Piece targetPiece = board.getPieceAt(targetRow, targetCol);
+        if (targetPiece != null && targetPiece.color.equals(color)) {
+            return false;
+        }
+
+        return rowDiff <= 1 && colDiff <= 1;
     }
 
     @Override
     public String getSymbol() {
-        return color.equals("white") ? "♔" : "♚";
+        return isWhite() ? "♔" : "♚";
     }
 }

@@ -7,7 +7,9 @@ public class Bishop extends Piece {
 
     @Override
     public boolean isValidMove(int targetRow, int targetCol) {
-        if (Math.abs(targetRow - row) == Math.abs(targetCol - col)) {
+        int rowDiff = Math.abs(targetRow - row);
+        int colDiff = Math.abs(targetCol - col);
+        if (rowDiff == colDiff) {
             int rowStep = targetRow > row ? 1 : -1;
             int colStep = targetCol > col ? 1 : -1;
 
@@ -30,6 +32,6 @@ public class Bishop extends Piece {
 
     @Override
     public String getSymbol() {
-        return color.equals("white") ? "♗" : "♝";
+        return isWhite() ? "♗" : "♝";
     }
 }

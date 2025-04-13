@@ -7,28 +7,13 @@ public class Rook extends Piece {
 
     @Override
     public boolean isValidMove(int targetRow, int targetCol) {
-        if (targetRow == row) {  // Horizontal move
-            int step = targetCol > col ? 1 : -1;
-            for (int c = col + step; c != targetCol; c += step) {
-                if (board.getPieceAt(row, c) != null) {
-                    return false;
-                }
+        if (targetRow == row || targetCol == col) {
+            if (isPathClear(targetRow, targetCol)) {
+                Piece targetPiece = board.getPieceAt(targetRow, targetCol);
+                return targetPiece == null || !targetPiece.color.equals(color);
             }
         }
-        else if (targetCol == col) {  // Vertical move
-            int step = targetRow > row ? 1 : -1;
-            for (int r = row + step; r != targetRow; r += step) {
-                if (board.getPieceAt(r, col) != null) {
-                    return false;
-                }
-            }
-        }
-        else {
-            return false;
-        }
-
-        Piece targetPiece = board.getPieceAt(targetRow, targetCol);
-        return targetPiece == null || !targetPiece.color.equals(color);
+        return false;
     }
 
     @Override
