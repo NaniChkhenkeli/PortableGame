@@ -2,377 +2,163 @@ package com.portablegame.util;
 
 import com.portablegame.main.model.*;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
-import java.util.regex.*;
-
-
 
 public class PgnValidator {
-
-    private String promotionPiece;
-
-    public void setPromotionPiece(String piece) {
-        this.promotionPiece = piece;
-    }
-
-    public String getPromotionPiece() {
-        return promotionPiece;
-    }
-
-    // PGN Parsing Patterns
-    private static final Pattern HEADER_PATTERN = Pattern.compile("^\\[(\\w+)\\s+\"([^\"]*)\"\\]$");
-    private static final Pattern MOVE_NUMBER_PATTERN = Pattern.compile("^(\\d+)\\.(?:\\s|\\.\\.)?");
-    private static final Pattern MOVE_PATTERN = Pattern.compile(
-            "(?<move>" +
-                    "(?<piece>[KQRBN])?(?<disambig>[a-h1-8])?(?<capture>x)?" +
-                    "(?<target>[a-h][1-8])(?<promo>=[QRBN])?(?<check>[+#])?|" +
-                    "(?<castle>O-O(?:-O)?[+#]?)" +
-                    ")(?<annotation>[!?]+)?"
-    );
-    private static final Pattern GAME_RESULT = Pattern.compile("^(1-0|0-1|1/2-1/2|\\*)$");
-
-    // Game state
-    private final Board board;
-    private final List<String> validationErrors;
+    private final ErrorReporter errorReporter;
+    private final PgnParser pgnParser;
 
     public PgnValidator() {
-        this.board = new Board() {
-            @Override
-            public String getFENSymbol() {
-                return "";
-            }
-        };
-        this.validationErrors = new ArrayList<>();
+        this.errorReporter = new ErrorReporter();
+        this.pgnParser = new PgnParser();
     }
 
-    // Main validation entry point
     public void validatePgnFile(String filePath) throws IOException {
         Path path = Paths.get(filePath);
         if (!Files.exists(path)) {
-            throw new IOException("File not found: " + path.toAbsolutePath());
+            errorReporter.logSystemMessage("File not found: " + path.toAbsolutePath());
+            throw new IOException("File not found");
         }
 
-        String content = Files.readString(path);
-        if (content.length() < 10) {
-            throw new IOException("File appears empty or too short");
+        System.out.println("\nValidating " + path.getFileName() + "...");
+        System.out.println("==================================");
+
+        List<String> games = pgnParser.readGamesFromFile(filePath);
+        int validGames = 0;
+        int invalidGames = 0;
+
+        for (String gameText : games) {
+            ErrorReport report = validateGame(gameText);
+            if (report.hasErrors()) {
+                invalidGames++;
+                errorReporter.logReport(report);
+                System.out.println(report.generateConsoleOutput());
+            } else {
+                validGames++;
+                System.out.println(report.generateConsoleOutput());
+            }
         }
 
-        // Rest of your validation logic
+        printSummary(validGames, invalidGames);
     }
 
-    // In PgnValidator.java
-    private void parseHeader(String line, ParseResult result) {
-        Matcher matcher = HEADER_PATTERN.matcher(line);
-        if (matcher.matches()) {
-            String tag = matcher.group(1);
-            String value = matcher.group(2);
+    public ErrorReport validateGame(String gameText) {
+        PgnParser.ParseResult parseResult = pgnParser.parseGame(gameText);
+        ErrorReport report = new ErrorReport(
+                String.format("%s - %s vs %s",
+                        parseResult.headers.getOrDefault("Event", "Unknown Game"),
+                        parseResult.headers.getOrDefault("White", "?"),
+                        parseResult.headers.getOrDefault("Black", "?"))
+        );
 
-            // Standardize tag names (case-insensitive)
-            tag = tag.substring(0, 1).toUpperCase() + tag.substring(1).toLowerCase();
+        validateHeaders(parseResult, report);
+        if (report.hasErrors()) return report;
 
-            result.headers.put(tag, value);
-        } else {
-            result.addError("Invalid header format: " + line);
+        ValidationResult validationResult = validateMoves(parseResult);
+        if (!validationResult.valid) {
+            validationResult.errors.forEach(error ->
+                    report.addIllegalMoveError(error, validationResult.moveNumber, validationResult.moveText));
         }
+
+        validateGameResult(parseResult.result, validationResult.board, report);
+        return report;
     }
 
-
-    private void validateRequiredHeaders(ParseResult result) {
-        // Standard required headers
-        String[] requiredHeaders = {
-                "Event", "Site", "Date", "Round",
-                "White", "Black", "Result"
-        };
-
-        // Additional recommended headers
-        String[] recommendedHeaders = {
-                "WhiteTitle", "BlackTitle", "WhiteElo", "BlackElo",
-                "ECO", "Opening", "Variation", "EventDate"
-        };
-
-        // Check required headers
+    private void validateHeaders(PgnParser.ParseResult parseResult, ErrorReport report) {
+        String[] requiredHeaders = {"Event", "Site", "Date", "Round", "White", "Black", "Result"};
         for (String header : requiredHeaders) {
-            if (!result.headers.containsKey(header)) {
-                result.addError("Missing required header: [" + header + "]");
+            if (!parseResult.headers.containsKey(header)) {
+                report.addHeaderValidationError("Missing required header: [" + header + "]");
             }
         }
 
-        // Warn about missing recommended headers
-        for (String header : recommendedHeaders) {
-            if (!result.headers.containsKey(header)) {
-                result.addError("Warning: Missing recommended header [" + header + "]");
+        if (parseResult.headers.containsKey("Result")) {
+            String result = parseResult.headers.get("Result");
+            if (!result.matches("1-0|0-1|1/2-1/2|\\*")) {
+                report.addHeaderValidationError("Invalid Result value: " + result);
             }
         }
 
-        // Validate Result header format if present
-        if (result.headers.containsKey("Result")) {
-            String resultValue = result.headers.get("Result");
-            if (!resultValue.matches("1-0|0-1|1/2-1/2|\\*")) {
-                result.addError("Invalid Result header value: " + resultValue);
-            }
-        }
-
-        // Validate date format if present
-        if (result.headers.containsKey("Date")) {
-            String date = result.headers.get("Date");
-            if (!date.matches("\\d{4}\\.\\d{2}\\.\\d{2}") &&
-                    !date.equals("????.??.??")) {
-                result.addError("Invalid Date format (expected YYYY.MM.DD): " + date);
+        if (parseResult.headers.containsKey("Date")) {
+            String date = parseResult.headers.get("Date");
+            if (!date.matches("\\d{4}\\.\\d{2}\\.\\d{2}|\\?{4}\\.\\?{2}\\.\\?{2}")) {
+                report.addHeaderValidationError("Invalid Date format (expected YYYY.MM.DD): " + date);
             }
         }
     }
 
-    // Core validation logic
-    public ValidationResult validateGame(String gameText) {
-        ParseResult parseResult = parseGame(gameText);
-        ValidationResult validationResult = new ValidationResult();
-
-        if (parseResult.hasErrors()) {
-            validationResult.errors.addAll(parseResult.errors);
-            validationResult.valid = false;
-            return validationResult;
-        }
-
-        // Copy headers to validation result
-        validationResult.headers.putAll(parseResult.headers);
-        validationResult.gameResult = parseResult.result;
-
-        // Validate moves
-        board.initializeBoard();
-        boolean whiteToMove = true;
-        int moveNumber = 1;
+    private ValidationResult validateMoves(PgnParser.ParseResult parseResult) {
+        ValidationResult result = new ValidationResult();
+        result.board = new Board() {
+            @Override public String getFENSymbol() { return ""; }
+        };
+        result.board.initializeBoard();
 
         for (int i = 0; i < parseResult.moves.size(); i++) {
-            String move = parseResult.moves.get(i);
-            String color = whiteToMove ? "white" : "black";
+            String moveText = parseResult.moves.get(i);
+            String color = parseResult.getPlayerColor(i);
+            int moveNumber = parseResult.getMoveNumber(i);
 
-            if (GAME_RESULT.matcher(move).matches()) {
-                validationResult.gameResult = move;
-                continue;
-            }
-
-            MoveValidation moveValidation = validateMove(move, color, moveNumber, parseResult);
-
-            if (!moveValidation.isValid()) {
-                validationResult.valid = false;
-                validationResult.errors.addAll(moveValidation.getErrors());
+            MoveValidation validation = new MoveValidation(moveNumber, moveText, color);
+            if (!validation.validateMove(moveText, color, result.board)) {
+                result.errors = validation.getErrors();
+                result.valid = false;
+                result.moveNumber = moveNumber;
+                result.moveText = moveText;
                 break;
             }
 
-            executeValidatedMove(moveValidation);
-            whiteToMove = !whiteToMove;
-
-            if (whiteToMove) {
-                moveNumber++;
-            }
+            executeValidatedMove(validation, result.board);
         }
 
-        if (validationResult.valid) {
-            validateGameResult(validationResult);
-        }
-
-        return validationResult;
-    }
-
-    // Move validation helper
-    private MoveValidation validateMove(String move, String color, int moveNumber, ParseResult parseResult) {
-        MoveValidation validation = new MoveValidation(moveNumber, move, color);
-
-        try {
-            if (move.equals("O-O") || move.equals("O-O-O")) {
-                if (!validateCastling(move, color)) {
-                    validation.addError("Invalid castling move");
-                } else {
-                    validation.setValid(true);
-                }
-                return validation;
-            }
-
-            MoveCoordinates coords = MoveCoordinates.fromAlgebraic(move, color);
-            if (coords == null) {
-                validation.addError("Invalid move notation: " + move);
-                return validation;
-            }
-
-            Piece piece = board.getPieceAt(coords.getFrom());
-            if (piece == null) {
-                validation.addError("No piece at " + coords.getFrom());
-                return validation;
-            }
-
-            if (!piece.getColor().equals(color)) {
-                validation.addError("Wrong color piece at " + coords.getFrom());
-                return validation;
-            }
-
-            if (!piece.isValidMove(coords.getToRow(), coords.getToCol())) {
-                validation.addError("Illegal move for " + piece.getClass().getSimpleName());
-                return validation;
-            }
-
-            validation.setCoordinates(coords);
-            validation.setValid(true);
-        } catch (Exception e) {
-            validation.addError("Error validating move: " + e.getMessage());
-        }
-
-        return validation;
-    }
-
-    private boolean validateCastling(String move, String color) {
-        boolean kingside = move.equals("O-O");
-
-        if (!move.matches("O-O(?:-O)?[+#]?")) {
-            validationErrors.add("Invalid castling notation: " + move);
-            return false;
-        }
-
-        return board.tryCastle(color, kingside);
-    }
-
-    // Move execution
-    private void executeValidatedMove(MoveValidation moveValidation) {
-        MoveCoordinates coords = moveValidation.getCoordinates();
-        board.tryMove(coords.getFrom(), coords.getTo(), null);
-    }
-
-    // Game result validation
-    private void validateGameResult(ValidationResult result) {
-        if ("1-0".equals(result.gameResult)) {
-            if (!board.isCheckmate("black")) {
-                result.errors.add("Game result claims white wins but not checkmate");
-            }
-        } else if ("0-1".equals(result.gameResult)) {
-            if (!board.isCheckmate("white")) {
-                result.errors.add("Game result claims black wins but not checkmate");
-            }
-        } else if ("1/2-1/2".equals(result.gameResult)) {
-            if (!board.isDraw()) {
-                result.errors.add("Game result claims draw but no draw condition met");
-            }
-        }
-    }
-
-    // PGN Parsing methods
-    private List<String> splitPgnGames(String pgnContent) {
-        List<String> games = new ArrayList<>();
-        String[] rawGames = pgnContent.split("(?=\\n\\[Event )");
-        for (String game : rawGames) {
-            String trimmed = game.trim();
-            if (!trimmed.isEmpty()) {
-                games.add(trimmed);
-            }
-        }
-        return games;
-    }
-
-    private ParseResult parseGame(String gameText) {
-        ParseResult result = new ParseResult();
-        String[] lines = gameText.split("\\r?\\n");
-        StringBuilder movesText = new StringBuilder();
-
-        for (String line : lines) {
-            line = line.trim();
-            if (line.startsWith("[")) {
-                parseHeader(line, result);
-            } else if (!line.isEmpty()) {
-                movesText.append(line).append(" ");
-            }
-        }
-
-        if (movesText.length() > 0) {
-            processMoveText(movesText.toString(), result);
-        } else {
-            result.addError("No moves found in game");
-        }
-
-        validateRequiredHeaders(result);
         return result;
     }
 
-    private void processMoveText(String movesText, ParseResult result) {
-        String cleaned = movesText
-                .replaceAll("\\{.*?\\}", "")
-                .replaceAll(";.*", "")
-                .replaceAll("\\(.*?\\)", "")
-                .replaceAll("\\s+", " ")
-                .trim();
-
-        String[] tokens = cleaned.split("(?<=\\s)(?=\\d+\\.)|\\s+");
-        int currentMoveNumber = 0;
-        boolean expectingWhite = true;
-
-        for (String token : tokens) {
-            if (token.isEmpty()) continue;
-
-            Matcher moveNumMatcher = MOVE_NUMBER_PATTERN.matcher(token);
-            if (moveNumMatcher.find()) {
-                currentMoveNumber = Integer.parseInt(moveNumMatcher.group(1));
-                expectingWhite = true;
-                continue;
-            }
-
-            if (GAME_RESULT.matcher(token).matches()) {
-                result.result = token;
-                continue;
-            }
-
-            Matcher moveMatcher = MOVE_PATTERN.matcher(token);
-            if (moveMatcher.matches()) {
-                result.moves.add(moveMatcher.group("move"));
-                expectingWhite = !expectingWhite;
-            } else {
-                result.addError("Invalid move syntax: " + token);
-            }
+    private void executeValidatedMove(MoveValidation validation, Board board) {
+        MoveCoordinates coords = validation.getCoordinates();
+        if (!board.tryMove(coords.from, coords.to, validation.getPromotionPiece())) {
+            throw new IllegalStateException("Failed to execute validated move: " +
+                    coords.from + " to " + coords.to);
         }
     }
 
-    // Helper classes
-    public static class ParseResult {
-        public final Map<String, String> headers = new LinkedHashMap<>();
-        public final List<String> moves = new ArrayList<>();
-        public final List<String> errors = new ArrayList<>();
-        public String result;
+    private void validateGameResult(String result, Board board, ErrorReport report) {
+        if (result == null) return;
 
-        public boolean hasErrors() {
-            return !errors.isEmpty();
-        }
-
-        public void addError(String error) {
-            errors.add(error);
-        }
-    }
-
-    public static class ValidationResult {
-        public boolean valid = true;
-        public String gameResult;
-        public final Map<String, String> headers = new LinkedHashMap<>();
-        public final List<String> errors = new ArrayList<>();
-
-        public String getErrorReport() {
-            if (errors.isEmpty()) return "No errors found";
-
-            StringBuilder report = new StringBuilder();
-            if (!headers.isEmpty()) {
-                report.append("Game Headers:\n");
-                headers.forEach((k, v) -> report.append("  ").append(k).append(": ").append(v).append("\n"));
-            }
-
-            report.append("\nValidation Errors:\n");
-            errors.forEach(e -> report.append("• ").append(e).append("\n"));
-
-            return report.toString();
+        switch (result) {
+            case "1-0":
+                if (!board.isCheckmate("black")) {
+                    report.addGameResultError("Game claims white wins but no checkmate occurred");
+                }
+                break;
+            case "0-1":
+                if (!board.isCheckmate("white")) {
+                    report.addGameResultError("Game claims black wins but no checkmate occurred");
+                }
+                break;
+            case "1/2-1/2":
+                if (!board.isDraw()) {
+                    report.addGameResultError("Game claims draw but no draw condition met");
+                }
+                break;
         }
     }
 
-    private void printValidationResult(ValidationResult result) {
-        System.out.println(result.getErrorReport());
-        System.out.println("Game is " + (result.valid ? "VALID" : "INVALID"));
-        if (result.gameResult != null) {
-            System.out.println("Result: " + result.gameResult);
-        }
+    private void printSummary(int valid, int invalid) {
+        System.out.println("\nValidation Summary:");
+        System.out.println("-------------------");
+        System.out.printf("Total Games: %d%n", valid + invalid);
+        System.out.printf("Valid Games: %d%n", valid);
+        System.out.printf("Invalid Games: %d%n", invalid);
+        System.out.printf("Error log: %s%n", errorReporter.getLogPath());
+    }
+
+    private static class ValidationResult {
+        boolean valid = true;
+        Board board;
+        List<String> errors = new ArrayList<>();
+        int moveNumber;
+        String moveText;
     }
 }

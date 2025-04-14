@@ -14,6 +14,14 @@ public abstract class Piece {
     }
     public abstract String getFENSymbol();
 
+    public int getRow() {
+        return row;
+    }
+
+    public int getCol() {
+        return col;
+    }
+
 
     public abstract boolean isValidMove(int toRow, int toCol);
     public abstract String getSymbol();
@@ -31,4 +39,6 @@ public abstract class Piece {
     protected boolean isOpponent(Piece target) {
         return target != null && !target.getColor().equals(color);
     }
+
+
 }

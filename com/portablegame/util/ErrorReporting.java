@@ -1,41 +1,58 @@
 package com.portablegame.util;
 
 public class ErrorReporting {
-    public static String generateReport(PgnValidator.ParseResult parseResult,
-                                        PgnValidator.ValidationResult validationResult) {
-        StringBuilder report = new StringBuilder();
-        boolean hasErrors = false;
+    public static String generateSummary(ErrorReport report) {
+        StringBuilder summary = new StringBuilder();
+        summary.append("Validation Report for Game: ").append(report.getGameId()).append("\n");
+        summary.append("=".repeat(50)).append("\n");
 
-        // 1. Header/Syntax Errors
-        if (parseResult.hasErrors()) {
-            report.append("=== PGN Syntax Errors ===\n");
-            parseResult.errors.forEach(error ->
-                    report.append("• ").append(error).append("\n"));
-            hasErrors = true;
+        if (!report.hasErrors()) {
+            summary.append("No errors found - game is valid\n");
+            return summary.toString();
         }
 
-        // 2. Move Validation Errors
-        if (!validationResult.valid) {
-            if (hasErrors) report.append("\n");
-            report.append("=== Move Validation Errors ===\n");
-            validationResult.errors.forEach(error ->
-                    report.append("• ").append(error).append("\n"));
-            hasErrors = true;
-        }
-
-        // 3. Game Result Validation
-        if (validationResult.gameResult != null) {
-            if (hasErrors) report.append("\n");
-            report.append("=== Game Result ===\n")
-                    .append("• Final Result: ").append(validationResult.gameResult);
-
-            // Add result validation warnings if any
-            if (!validationResult.valid && validationResult.errors.stream()
-                    .anyMatch(e -> e.contains("result claims"))) {
-                report.append("\n• Warning: Result may be incorrect - check move validation");
+        summary.append("Error Summary:\n");
+        report.getErrors().forEach(error -> {
+            summary.append("- ").append(error.getClass().getSimpleName())
+                    .append(": ").append(error.getMessage());
+            if (error.getMoveNumber() > 0) {
+                summary.append(" [Move ").append(error.getMoveNumber());
+                if (error.getMoveText() != null) {
+                    summary.append(": ").append(error.getMoveText());
+                }
+                summary.append("]");
             }
+            summary.append("\n");
+        });
+
+        return summary.toString();
+    }
+
+    public static String generateConsoleReport(ErrorReport report) {
+        StringBuilder consoleOutput = new StringBuilder();
+
+        if (report.hasErrors()) {
+            consoleOutput.append("\u001B[31m"); // Red color for errors
+            consoleOutput.append("Validation Errors for ").append(report.getGameId()).append(":\n");
+
+            report.getErrors().forEach(error -> {
+                consoleOutput.append("• ").append(error.getMessage());
+                if (error.getMoveNumber() > 0) {
+                    consoleOutput.append(" (Move ").append(error.getMoveNumber());
+                    if (error.getMoveText() != null) {
+                        consoleOutput.append(": ").append(error.getMoveText());
+                    }
+                    consoleOutput.append(")");
+                }
+                consoleOutput.append("\n");
+            });
+            consoleOutput.append("\u001B[0m"); // Reset color
+        } else {
+            consoleOutput.append("\u001B[32m"); // Green color for success
+            consoleOutput.append(report.getGameId()).append(": VALID\n");
+            consoleOutput.append("\u001B[0m"); // Reset color
         }
 
-        return hasErrors ? report.toString() : "No errors found - game is valid";
+        return consoleOutput.toString();
     }
 }

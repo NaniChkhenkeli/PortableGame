@@ -22,6 +22,10 @@ public abstract class Board {
         this.board = new Piece[8][8];
         initializeBoard();
     }
+    public void setPieceAt(int row, int col, Piece piece) {
+        board[row][col] = piece;  // Assuming board is a 2D Piece array
+    }
+
 
     public boolean isPromotionMove(String from, String to) {
         Piece piece = getPieceAt(from);
@@ -89,6 +93,15 @@ public abstract class Board {
         int row = 8 - Character.getNumericValue(position.charAt(1));
         int col = position.charAt(0) - 'a';
         return getPieceAt(row, col);
+    }
+
+    public boolean isWhiteKingMoved() { return whiteKingMoved; }
+    public boolean isBlackKingMoved() { return blackKingMoved; }
+    public boolean isWhiteRookMoved(boolean kingside) {
+        return whiteRooksMoved[kingside ? 1 : 0];
+    }
+    public boolean isBlackRookMoved(boolean kingside) {
+        return blackRooksMoved[kingside ? 1 : 0];
     }
 
     public boolean tryMove(String from, String to, String promotionChoice) {
@@ -308,7 +321,7 @@ public abstract class Board {
         }
     }
 
-    protected boolean isPathClear(int fromRow, int fromCol, int toRow, int toCol) {
+    public boolean isPathClear(int fromRow, int fromCol, int toRow, int toCol) {
         int rowStep = Integer.compare(toRow, fromRow);
         int colStep = Integer.compare(toCol, fromCol);
 
@@ -349,7 +362,6 @@ public abstract class Board {
 
 
 
-    // In Board.java
     public boolean isSquareUnderAttack(int row, int col, String attackerColor) {
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
