@@ -7,76 +7,59 @@ public class Pawn extends Piece {
 
     @Override
     public boolean isValidMove(int toRow, int toCol) {
-        // Can't move to the same position
+        // Can't move to same square
         if (row == toRow && col == toCol) {
             return false;
         }
 
-        int direction = color.equals("white") ? -1 : 1;
-        int startRow = color.equals("white") ? 6 : 1;
-        int promotionRow = color.equals("white") ? 0 : 7;
+        int direction = getDirection();
+        int startRow = getStartRow();
 
-        // 1. Validate basic movement rules
-        if (!isValidPawnMovement(toRow, toCol, direction, startRow)) {
-            return false;
+        // Check basic movement patterns
+        if (isVerticalMove(toCol)) {
+            return validateVerticalMove(toRow, toCol, direction, startRow);
+        } else if (isDiagonalCapture(toRow, toCol, direction)) {
+            return validateCapture(toRow, toCol);
         }
 
-        // 2. Check for blocking pieces
-        if (isPathBlocked(toRow, toCol, direction)) {
-            return false;
-        }
-
-        // 3. Validate captures (including en passant)
-        if (Math.abs(col - toCol) == 1) {
-            return isValidCapture(toRow, toCol, direction, promotionRow);
-        }
-
-        // 4. Check promotion
-        if (toRow == promotionRow) {
-            // Promotion will be handled by Board during move execution
-            return true;
-        }
-
-        return true;
+        return false;
     }
 
-    private boolean isValidPawnMovement(int toRow, int toCol, int direction, int startRow) {
-        // Vertical movement
-        if (col == toCol) {
-            // Single move forward
-            if (toRow == row + direction) {
-                return board.getPieceAt(toRow, toCol) == null;
-            }
-            // Double move from starting position
-            if (row == startRow && toRow == row + 2 * direction) {
-                return board.getPieceAt(toRow, toCol) == null &&
-                        board.getPieceAt(row + direction, toCol) == null;
-            }
-            return false;
-        }
-        return true;
+    private int getDirection() {
+        return color.equals("white") ? -1 : 1;
     }
 
-    private boolean isPathBlocked(int toRow, int toCol, int direction) {
-        // For vertical moves, check if path is blocked
-        if (col == toCol && Math.abs(toRow - row) > 1) {
-            return board.getPieceAt(row + direction, toCol) != null;
+    private int getStartRow() {
+        return color.equals("white") ? 6 : 1;
+    }
+
+    private boolean isVerticalMove(int toCol) {
+        return col == toCol;
+    }
+
+    private boolean validateVerticalMove(int toRow, int toCol, int direction, int startRow) {
+        // Single square forward
+        if (toRow == row + direction) {
+            return board.getPieceAt(toRow, toCol) == null;
+        }
+        // Double move from starting position
+        else if (row == startRow && toRow == row + 2 * direction) {
+            return board.getPieceAt(toRow, toCol) == null &&
+                    board.getPieceAt(row + direction, toCol) == null;
         }
         return false;
     }
 
-    private boolean isValidCapture(int toRow, int toCol, int direction, int promotionRow) {
-        // Must move diagonally forward
-        if (toRow != row + direction) {
-            return false;
-        }
+    private boolean isDiagonalCapture(int toRow, int toCol, int direction) {
+        return Math.abs(col - toCol) == 1 && toRow == row + direction;
+    }
 
+    private boolean validateCapture(int toRow, int toCol) {
         // Normal capture
         Piece target = board.getPieceAt(toRow, toCol);
         if (target != null && isOpponent(target)) {
             return true;
         }
-
         // En passant capture
         return isValidEnPassant(toRow, toCol);
     }
@@ -87,21 +70,25 @@ public class Pawn extends Piece {
             return false;
         }
 
-        int epRow = color.equals("white") ? 2 : 5;
+        // Calculate correct rows for en passant
+        int epTargetRow = color.equals("white") ? 3 : 4;
+        int epVictimRow = color.equals("white") ? 3 : 4;
         int epCol = epTarget.charAt(0) - 'a';
 
-        return toRow == epRow &&
+        // Verify all en passant conditions
+        return toRow == epTargetRow &&
                 toCol == epCol &&
-                Math.abs(col - toCol) == 1;
+                board.getPieceAt(epVictimRow, toCol) instanceof Pawn &&
+                isOpponent(board.getPieceAt(epVictimRow, toCol));
     }
 
     @Override
     public String getSymbol() {
-        return color.equals("white") ? "♙" : "♟";  // Keep your current symbols
+        return color.equals("white") ? "♙" : "♟";
     }
 
     @Override
     public String getFENSymbol() {
-        return color.equals("white") ? "P" : "p";  // FEN uses P/p
+        return color.equals("white") ? "P" : "p";
     }
 }

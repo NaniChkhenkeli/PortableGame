@@ -7,7 +7,17 @@ import java.util.Objects;
 
 public class MoveValidation {
     private static final String MOVE_PATTERN =
-            "([KQRBNP]?[a-h]?[1-8]?x?[a-h][1-8](=[QRBN])?[+#]?|O-O(?:-O)?[+#]?)";
+            "^(?:" +
+                    "([KQRBN])([a-h]?[1-8]?)x?([a-h][1-8])(=[QRBN])?" +
+                    "|" +
+                    "([a-h])x([a-h][1-8])(=[QRBN])?" +
+                    "|" +
+                    "([a-h][1-8])(=[QRBN])?" +
+                    "|" +
+                    "(O-O(?:-O)?)" +
+                    ")" +
+                    "[+#]?$";
+
 
     private final int moveNumber;
     private final String originalNotation;
@@ -58,47 +68,42 @@ public class MoveValidation {
     private boolean validateCastling(String move, String color, Board board) {
         boolean kingside = move.equals("O-O");
         int row = color.equals("white") ? 7 : 0;
+        int kingCol = 4;
+        int kingDestCol = kingside ? 6 : 2;
 
-        // Verify castling rights
-        if (color.equals("white")) {
-            if (board.isWhiteKingMoved() ||
-                    (kingside ? board.isWhiteRookMoved(true) : board.isWhiteRookMoved(false))) {
-                addError("Castling not allowed - king or rook has moved");
-                return false;
-            }
-        } else {
-            if (board.isBlackKingMoved() ||
-                    (kingside ? board.isBlackRookMoved(true) : board.isBlackRookMoved(false))) {
-                addError("Castling not allowed - king or rook has moved");
-                return false;
-            }
+        // Verify king exists and hasn't moved
+        Piece king = board.getPieceAt(row, kingCol);
+        if (!(king instanceof King) || !king.getColor().equals(color)) {
+            addError("King not in starting position");
+            return false;
         }
 
-        // Check path is clear
+        // Check if king is currently in check
+        if (board.isSquareUnderAttack(row, kingCol, color.equals("white") ? "black" : "white")) {
+            addError("Cannot castle while in check");
+            return false;
+        }
+
+        // Check squares king moves through aren't under attack
         int step = kingside ? 1 : -1;
-        for (int col = 4 + step; col != (kingside ? 7 : 0); col += step) {
-            if (board.getPieceAt(row, col) != null) {
-                addError("Castling path not clear");
+        for (int col = kingCol; col != kingDestCol; col += step) {
+            if (col != kingCol && board.isSquareUnderAttack(row, col, color.equals("white") ? "black" : "white")) {
+                addError("Cannot castle through check");
                 return false;
             }
         }
 
-        // Check not through or into check
-        for (int col = 4; col != (kingside ? 6 : 2); col += step) {
-            if (board.isSquareUnderAttack(row, col, color.equals("white") ? "black" : "white")) {
-                addError("Castling through check");
-                return false;
-            }
-        }
-
-        this.coordinates = new MoveCoordinates();
-        this.coordinates.from = (kingside ? "e" : "e") + (row + 1);
-        this.coordinates.to = (kingside ? "g" : "c") + (row + 1);
+        this.coordinates = new MoveCoordinates(
+                "e" + (row + 1),
+                (kingside ? "g" : "c") + (row + 1)
+        );
         return true;
     }
 
+
     private boolean validateStandardMove(String move, String color, Board board,
                                          MoveCoordinates coords) {
+        // Get the moving piece
         Piece piece = board.getPieceAt(coords.from);
 
         // Verify piece exists and is correct color
@@ -123,9 +128,32 @@ public class MoveValidation {
             }
         }
 
-        // Check for en passant
-        if (move.contains("x") && board.getPieceAt(coords.to) == null) {
-            if (!validateEnPassant(piece, coords, board)) {
+        // Handle capture moves
+        if (move.contains("x")) {
+            Piece target = board.getPieceAt(coords.to);
+
+            if (target == null) {
+                // For non-pawn pieces, capturing empty square is invalid
+                if (!(piece instanceof Pawn)) {
+                    addError("No piece to capture at %s", coords.to);
+                    return false;
+                }
+                // For pawns, must be valid en passant
+                if (!validateEnPassant(piece, coords, board)) {
+                    addError("Invalid en passant capture at %s", coords.to);
+                    return false;
+                }
+            } else if (target.getColor().equals(color)) {
+                // Can't capture your own piece
+                addError("Cannot capture own %s at %s",
+                        target.getClass().getSimpleName(), coords.to);
+                return false;
+            }
+        } else {
+            // For non-capture moves, destination must be empty
+            if (board.getPieceAt(coords.to) != null) {
+                addError("%s is blocked by %s", coords.to,
+                        board.getPieceAt(coords.to).getClass().getSimpleName());
                 return false;
             }
         }
@@ -211,14 +239,13 @@ public class MoveValidation {
     }
 
     private boolean wouldLeaveKingInCheck(Piece piece, MoveCoordinates coords, Board board) {
-        // Simulate move
-        Piece captured = board.getPieceAt(coords.to);
+        Piece captured = board.getPieceAt(coords.toRow, coords.toCol);
+
         board.setPieceAt(coords.toRow, coords.toCol, piece);
         board.setPieceAt(piece.getRow(), piece.getCol(), null);
 
-        boolean inCheck = board.isKingInCheck(color);
+        boolean inCheck = board.isKingInCheck(piece.getColor());
 
-        // Undo simulation
         board.setPieceAt(piece.getRow(), piece.getCol(), piece);
         board.setPieceAt(coords.toRow, coords.toCol, captured);
 

@@ -1,5 +1,0 @@
-[2025-04-15 01:47:41] [SYSTEM] Initialized chess validation error log
-[2025-04-15 02:02:37] [SYSTEM] File error: src\main\resources\com\portablegame\resources\pgn\basic.pgn
-
-[2025-04-15 02:08:09] Game: Tbilisi FIDE GP 2015 - Jobava,Ba vs Mamedyarov,S
-  IllegalMoveError: Move 1 (white): Move would leave king in check [Move 1: b3]%n

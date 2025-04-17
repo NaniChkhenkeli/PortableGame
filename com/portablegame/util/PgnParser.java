@@ -300,47 +300,26 @@ public class PgnParser {
     /**
      * Validates required headers and checks recommended ones
      */
+    // Fix method declaration
     private static void validateHeaders(ParseResult result) {
-        // Check required headers
-        for (String header : REQUIRED_HEADERS.keySet()) {
-            if (!result.headers.containsKey(header)) {
-                result.addError(String.format(
-                        "Missing required header: [%s] (%s)",
-                        header, REQUIRED_HEADERS.get(header)
-                ));
+        String[] requiredTags = {
+                "Event", "Site", "Date", "Round", "White", "Black", "Result"
+        };
+
+        for (String tag : requiredTags) {
+            if (!result.headers.containsKey(tag)) {
+                result.addError("Missing required tag: [" + tag + "]");
             }
         }
 
-        // Check recommended headers
-        for (String header : RECOMMENDED_HEADERS) {
-            if (!result.headers.containsKey(header)) {
-                result.addWarning(String.format(
-                        "Missing recommended header: [%s]",
-                        header
-                ));
-            }
-        }
-
-        // Validate result format if present
         if (result.headers.containsKey("Result")) {
             String resultValue = result.headers.get("Result");
-            if (!resultValue.matches("1-0|0-1|1/2-1/2|\\*")) {
-                result.addError("Invalid Result header value: " + resultValue);
+            if (!resultValue.matches("^(1-0|0-1|1/2-1/2|\\*)$")) {
+                result.addError("Invalid Result value: " + resultValue);
             }
         }
-
-        // Validate date format if present
-        if (result.headers.containsKey("Date")) {
-            String date = result.headers.get("Date");
-            if (!date.matches("\\d{4}\\.\\d{2}\\.\\d{2}|\\?{4}\\.\\?{2}\\.\\?{2}")) {
-                result.addError("Invalid Date format (expected YYYY.MM.DD): " + date);
-            }
-        }
-
-        // Validate Elo ratings if present
-        validateEloRating(result, "WhiteElo");
-        validateEloRating(result, "BlackElo");
     }
+
 
     private static void validateEloRating(ParseResult result, String header) {
         if (result.headers.containsKey(header)) {

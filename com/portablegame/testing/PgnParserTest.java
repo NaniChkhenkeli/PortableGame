@@ -12,9 +12,9 @@ public class PgnParserTest {
     }
 
     private static void testHeaderValidation() {
-        String badHeader = "[Event \"Some Event\"]\n" +  // Fixed missing closing ]
-                "[InvalidTag \"value\"]\n" +    // Removed hyphen from tag name
-                "[Date \"2023.13.01\"]";        // Added quotes
+        String badHeader = "[Event \"Some Event\"]\n" +
+                "[InvalidTag \"value\"]\n" +
+                "[Date \"2023.13.01\"]";
 
         PgnParser parser = new PgnParser();
         PgnParser.ParseResult result = parser.parseGame(badHeader);
@@ -37,16 +37,10 @@ public class PgnParserTest {
                 "9. Nxc6?? bxc6\n" +
                 "10. 1-0";
 
-        // Create validator and board
+        // Create validator
         PgnValidator validator = new PgnValidator();
-        Board board = new Board() {
-            @Override public String getFENSymbol() { return ""; }
-        };
-        board.initializeBoard();
 
         // Parse and validate
-        PgnParser parser = new PgnParser();
-        PgnParser.ParseResult parseResult = parser.parseGame(badMoves);
         ErrorReport report = validator.validateGame(badMoves);
 
         System.out.println("\nMove Validation Test:");

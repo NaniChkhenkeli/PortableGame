@@ -1,43 +1,68 @@
 package com.portablegame.main.model;
 
+/**
+ * Represents the King piece and handles its movement logic,
+ * including normal moves and castling.
+ */
 public class King extends Piece {
+    private boolean hasMoved = false;
+
+    public boolean hasMoved() {
+        return hasMoved;
+    }
+
+    public void setHasMoved(boolean hasMoved) {
+        this.hasMoved = hasMoved;
+    }
+
     public King(String color, int row, int col, Board board) {
         super(color, row, col, board);
     }
 
     @Override
     public boolean isValidMove(int toRow, int toCol) {
+        if (row == toRow && col == toCol) {
+            return false;
+        }
+
         int rowDiff = Math.abs(toRow - row);
         int colDiff = Math.abs(toCol - col);
 
-        // Normal king move (1 square)
-        if ((rowDiff <= 1 && colDiff <= 1) && !(rowDiff == 0 && colDiff == 0)) {
-            return !isOpponent(board.getPieceAt(toRow, toCol));
+        // Normal king move
+        if (rowDiff <= 1 && colDiff <= 1) {
+            Piece target = board.getPieceAt(toRow, toCol);
+            return target == null || isOpponent(target);
         }
 
-        // Castling
-        if (rowDiff == 0 && colDiff == 2 && row == (color.equals("white") ? 7 : 0)) {
-            return isValidCastle(toCol);
+        // Castling move
+        if (row == toRow && colDiff == 2) {
+            return board.isValidCastling(color, row, col, toCol);
         }
+
         return false;
     }
 
-    private boolean isValidCastle(int toCol) {
-        int rookCol = toCol > col ? 7 : 0;
-        Piece rook = board.getPieceAt(row, rookCol);
 
-        // Check if pieces are correct and haven't moved
-        if (!(rook instanceof Rook) || isOpponent(rook)) return false;
+    @Override
+    public void moveTo(int toRow, int toCol) {
+        int colDiff = Math.abs(toCol - col);
 
-        // Check if path is clear and not under attack
-        int step = toCol > col ? 1 : -1;
-        for (int c = col + step; c != rookCol; c += step) {
-            if (board.getPieceAt(row, c) != null) return false;
-            if (c != toCol && board.isSquareUnderAttack(row, c, color.equals("white") ? "black" : "white")) {
-                return false;
+        // Handle castling move
+        if (colDiff == 2 && row == toRow) {
+            int rookFromCol = (toCol > col) ? 7 : 0; // King-side or Queen-side
+            int rookToCol = (toCol > col) ? toCol - 1 : toCol + 1;
+
+            Piece rook = board.getPieceAt(row, rookFromCol);
+            if (rook instanceof Rook) {
+                board.setPieceAt(row, rookToCol, rook);
+                board.setPieceAt(row, rookFromCol, null);
+                ((Rook) rook).setHasMoved(true);
+                rook.setPosition(row, rookToCol);
             }
         }
-        return true;
+
+        // Standard move
+        super.moveTo(toRow, toCol);
     }
 
     @Override
