@@ -36,21 +36,24 @@ Position Counting: Detects threefold repetition.
 
 ## installation #
 Java JDK 11+ 
-verify JAVA_HOME environment variable is set. 
+verify JAVA_HOME environment variable is set.  
 
 ## output ##
-validator provides console output with validation results, detailed error log file, summary statistics of validation results. 
-Validating PGN file: /path/to/games.pgn
+validator provides console output with validation results, detailed error log file, summary statistics of validation results.
+
 ==================================
 Found 3 game(s) in file: games.pgn
 
 Processing game: Tournament Game - PlayerA vs PlayerB
 Initial board state:
+
 ![image](https://github.com/user-attachments/assets/fc4e9bca-d91a-482d-ae4e-9cf4735a7c71)
+
 
 [...]
 
 Validation Summary:
+
 ====================
 Total games processed: 3
 Valid games: 2
