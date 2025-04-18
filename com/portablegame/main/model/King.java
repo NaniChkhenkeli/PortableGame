@@ -1,19 +1,7 @@
 package com.portablegame.main.model;
 
-/**
- * Represents the King piece and handles its movement logic,
- * including normal moves and castling.
- */
 public class King extends Piece {
     private boolean hasMoved = false;
-
-    public boolean hasMoved() {
-        return hasMoved;
-    }
-
-    public void setHasMoved(boolean hasMoved) {
-        this.hasMoved = hasMoved;
-    }
 
     public King(String color, int row, int col, Board board) {
         super(color, row, col, board);
@@ -28,41 +16,45 @@ public class King extends Piece {
         int rowDiff = Math.abs(toRow - row);
         int colDiff = Math.abs(toCol - col);
 
-        // Normal king move
+        // Normal king move (1 square in any direction)
         if (rowDiff <= 1 && colDiff <= 1) {
             Piece target = board.getPieceAt(toRow, toCol);
-            return target == null || isOpponent(target);
+            return target == null || !target.getColor().equals(color);
         }
 
-        // Castling move
-        if (row == toRow && colDiff == 2) {
+        // Castling move (2 squares horizontally)
+        if (row == toRow && colDiff == 2 && !hasMoved) {
             return board.isValidCastling(color, row, col, toCol);
         }
 
         return false;
     }
 
-
     @Override
     public void moveTo(int toRow, int toCol) {
-        int colDiff = Math.abs(toCol - col);
+        // Handle castling
+        if (Math.abs(col - toCol) == 2) {
+            // Determine rook positions
+            int rookFromCol = toCol > col ? 7 : 0;
+            int rookToCol = toCol > col ? 5 : 3;
 
-        // Handle castling move
-        if (colDiff == 2 && row == toRow) {
-            int rookFromCol = (toCol > col) ? 7 : 0; // King-side or Queen-side
-            int rookToCol = (toCol > col) ? toCol - 1 : toCol + 1;
-
+            // Move the rook
             Piece rook = board.getPieceAt(row, rookFromCol);
-            if (rook instanceof Rook) {
-                board.setPieceAt(row, rookToCol, rook);
-                board.setPieceAt(row, rookFromCol, null);
-                ((Rook) rook).setHasMoved(true);
-                rook.setPosition(row, rookToCol);
-            }
+            board.setPieceAt(row, rookToCol, rook);
+            board.setPieceAt(row, rookFromCol, null);
+            rook.setPosition(row, rookToCol);
         }
 
-        // Standard move
         super.moveTo(toRow, toCol);
+        hasMoved = true;
+    }
+
+    public boolean hasMoved() {
+        return hasMoved;
+    }
+
+    public void setHasMoved(boolean hasMoved) {
+        this.hasMoved = hasMoved;
     }
 
     @Override

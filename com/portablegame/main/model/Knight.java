@@ -7,17 +7,11 @@ public class Knight extends Piece {
 
     @Override
     public boolean isValidMove(int toRow, int toCol) {
-        int rowDiff = Math.abs(toRow - row);
-        int colDiff = Math.abs(toCol - col);
-
-        // L-shaped move
-        boolean isValidKnightMove = (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
-        if (!isValidKnightMove) return false;
-
-        // Check target square
-        Piece target = board.getPieceAt(toRow, toCol);
-        return target == null || isOpponent(target);
+        int rowDiff = Math.abs(toRow - this.row);
+        int colDiff = Math.abs(toCol - this.col);
+        return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
     }
+
 
     @Override
     public String getSymbol() {

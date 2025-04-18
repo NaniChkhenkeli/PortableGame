@@ -10,7 +10,7 @@ import java.util.List;
 public class Main {
     private static final ErrorReporter errorReporter = new ErrorReporter();
     private static final PgnParser pgnParser = new PgnParser();
-    private static final String DEFAULT_PGN_RESOURCE = "com/portablegame/resources/pgn/error.pgn";
+    private static final String DEFAULT_PGN_RESOURCE = "com/portablegame/resources/pgn/basic.pgn";
 
     public static void main(String[] args) {
         if (args.length > 0) {

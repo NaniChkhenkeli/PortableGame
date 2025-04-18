@@ -73,7 +73,6 @@ public class PgnValidator {
         return report;
     }
 
-
     private void validateHeaders(PgnParser.ParseResult parseResult, ErrorReport report) {
         String[] requiredHeaders = {"Event", "Site", "Date", "Round", "White", "Black", "Result"};
         for (String header : requiredHeaders) {
@@ -104,7 +103,7 @@ public class PgnValidator {
         ValidationResult result = new ValidationResult();
         result.board = new Board();
         result.board.initializeBoard();
-        result.valid = true; // Start assuming valid
+        result.valid = true;
 
         for (int i = 0; i < parseResult.moves.size(); i++) {
             String moveText = parseResult.moves.get(i);
@@ -117,7 +116,6 @@ public class PgnValidator {
                     if (!result.board.tryCastle(color, kingside)) {
                         result.errors.add("Illegal castling: " + moveText);
                         result.valid = false;
-                        // Store first error position for reporting
                         if (result.moveNumber == 0) {
                             result.moveNumber = moveNumber;
                             result.moveText = moveText;
@@ -129,7 +127,6 @@ public class PgnValidator {
                     if (!validation.validateMove(moveText, color, result.board)) {
                         result.errors.addAll(validation.getErrors());
                         result.valid = false;
-                        // Store first error position for reporting
                         if (result.moveNumber == 0) {
                             result.moveNumber = moveNumber;
                             result.moveText = moveText;
@@ -162,19 +159,21 @@ public class PgnValidator {
     }
 
     private void validateGameResult(String result, Board board, ErrorReport report) {
-        if (result == null) return;
+        if (result == null || result.equals("*")) {
+            return; // Ongoing game, no result to validate
+        }
 
         switch (result) {
             case "1-0":
-                if (!board.isCheckmate("black")) {
+                if (!board.isCheckmate("black") && !board.isResignation("black")) {
                     report.addGameStateError(ErrorType.INCORRECT_GAME_RESULT,
-                            "Game claims white wins but no checkmate occurred");
+                            "Game claims white wins but no checkmate/resignation occurred");
                 }
                 break;
             case "0-1":
-                if (!board.isCheckmate("white")) {
+                if (!board.isCheckmate("white") && !board.isResignation("white")) {
                     report.addGameStateError(ErrorType.INCORRECT_GAME_RESULT,
-                            "Game claims black wins but no checkmate occurred");
+                            "Game claims black wins but no checkmate/resignation occurred");
                 }
                 break;
             case "1/2-1/2":
@@ -188,11 +187,11 @@ public class PgnValidator {
 
     private void printSummary(int valid, int invalid) {
         System.out.println("\nValidation Summary:");
-        System.out.println("-------------------");
-        System.out.printf("Total Games: %d%n", valid + invalid);
-        System.out.printf("Valid Games: %d%n", valid);
-        System.out.printf("Invalid Games: %d%n", invalid);
-        System.out.printf("Error log: %s%n", errorReporter.getLogPath());
+        System.out.println("====================");
+        System.out.printf("Total games processed: %d%n", valid + invalid);
+        System.out.printf("Valid games: %d%n", valid);
+        System.out.printf("Invalid games: %d%n", invalid);
+        System.out.printf("Error log written to: %s%n", errorReporter.getLogPath());
     }
 
     private static class ValidationResult {

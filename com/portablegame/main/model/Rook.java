@@ -9,6 +9,10 @@ public class Rook extends Piece {
 
     @Override
     public boolean isValidMove(int toRow, int toCol) {
+        if (row == toRow && col == toCol) {
+            return false;
+        }
+
         // Must move in straight line
         if (row != toRow && col != toCol) {
             return false;
@@ -19,18 +23,22 @@ public class Rook extends Piece {
             return false;
         }
 
-        // Check target square
         Piece target = board.getPieceAt(toRow, toCol);
-        return target == null || isOpponent(target);
+        return target == null || !target.getColor().equals(color);
+    }
+
+    @Override
+    public void moveTo(int toRow, int toCol) {
+        super.moveTo(toRow, toCol);
+        hasMoved = true;
     }
 
     public boolean hasMoved() {
         return hasMoved;
     }
 
-
-    public void setHasMoved(boolean moved) {
-        this.hasMoved = moved;
+    public void setHasMoved(boolean hasMoved) {
+        this.hasMoved = hasMoved;
     }
 
     @Override
