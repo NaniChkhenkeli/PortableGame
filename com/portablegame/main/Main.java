@@ -145,7 +145,6 @@ public class Main {
                 }
             }
 
-            // Only validate result if all moves were valid
             if (gameValid) {
                 ErrorReport resultReport = validateGameResult(parseResult.result, board, gameId);
                 if (!resultReport.hasErrors()) {

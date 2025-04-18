@@ -10,13 +10,8 @@ public class Queen extends Piece {
         int rowDiff = Math.abs(toRow - row);
         int colDiff = Math.abs(toCol - col);
 
-        // Must move in straight line or diagonal
         if (!(rowDiff == 0 || colDiff == 0 || rowDiff == colDiff)) return false;
-
-        // Check path is clear
         if (!board.isPathClear(row, col, toRow, toCol)) return false;
-
-        // Check target square
         Piece target = board.getPieceAt(toRow, toCol);
         return target == null || isOpponent(target);
     }

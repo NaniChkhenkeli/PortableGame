@@ -186,12 +186,13 @@ public class PgnValidator {
     }
 
     private void printSummary(int valid, int invalid) {
-        System.out.println("\nValidation Summary:");
-        System.out.println("====================");
-        System.out.printf("Total games processed: %d%n", valid + invalid);
-        System.out.printf("Valid games: %d%n", valid);
-        System.out.printf("Invalid games: %d%n", invalid);
-        System.out.printf("Error log written to: %s%n", errorReporter.getLogPath());
+
+            System.out.println("\nValidation Summary:");
+            System.out.println("====================");
+            System.out.printf("Total games processed: %d%n", valid + invalid);
+            System.out.printf("Valid games: %d%n", valid);
+            System.out.printf("Games with errors: %d%n", invalid);
+            System.out.printf("Error log written to: %s%n", errorReporter.getLogPath());
     }
 
     private static class ValidationResult {

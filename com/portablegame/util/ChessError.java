@@ -10,7 +10,7 @@ public interface ChessError {
         return getType().isCritical();
     }
 
-    // Concrete implementations
+    // concrete implementations
     class HeaderError implements ChessError {
         private final ErrorType type;
         private final String message;

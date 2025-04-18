@@ -16,13 +16,13 @@ public class King extends Piece {
         int rowDiff = Math.abs(toRow - row);
         int colDiff = Math.abs(toCol - col);
 
-        // Normal king move (1 square in any direction)
+        // 1 square in any direction
         if (rowDiff <= 1 && colDiff <= 1) {
             Piece target = board.getPieceAt(toRow, toCol);
             return target == null || !target.getColor().equals(color);
         }
 
-        // Castling move (2 squares horizontally)
+        // 2 squares horizontally
         if (row == toRow && colDiff == 2 && !hasMoved) {
             return board.isValidCastling(color, row, col, toCol);
         }

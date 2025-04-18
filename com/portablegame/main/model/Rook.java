@@ -13,12 +13,10 @@ public class Rook extends Piece {
             return false;
         }
 
-        // Must move in straight line
         if (row != toRow && col != toCol) {
             return false;
         }
 
-        // Check path is clear
         if (!board.isPathClear(row, col, toRow, toCol)) {
             return false;
         }

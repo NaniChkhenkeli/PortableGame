@@ -1,7 +1,5 @@
 package com.portablegame.testing;
 
-
-
 import com.portablegame.main.model.Bishop;
 import com.portablegame.main.model.Board;
 import com.portablegame.main.model.Pawn;
@@ -16,7 +14,6 @@ public class BishopTest {
     @BeforeEach
     public void setUp() {
         board = new Board();
-        // Clear the board completely
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 board.setPieceAt(i, j, null);
@@ -36,19 +33,17 @@ public class BishopTest {
 
     @Test
     public void testBlockedPath() {
-        // Add a blocking piece
         board.setPieceAt(4, 4, new Pawn("white", 4, 4, board));
         assertFalse(bishop.isValidMove(5, 5));
 
-        // Test capture
         board.setPieceAt(4, 4, new Pawn("black", 4, 4, board));
         assertTrue(bishop.isValidMove(4, 4));
     }
 
     @Test
     public void testInvalidMoves() {
-        assertFalse(bishop.isValidMove(3, 0)); // Horizontal
-        assertFalse(bishop.isValidMove(0, 3)); // Vertical
-        assertFalse(bishop.isValidMove(4, 5)); // Knight-like
+        assertFalse(bishop.isValidMove(3, 0));
+        assertFalse(bishop.isValidMove(0, 3));
+        assertFalse(bishop.isValidMove(4, 5));
     }
 }

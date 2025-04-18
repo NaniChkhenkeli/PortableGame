@@ -22,25 +22,22 @@ public class KingTest {
 
     @Test
     public void testValidMoves() {
-        // testing in all directions
-        assertTrue(king.isValidMove(2, 2)); // Diagonal
-        assertTrue(king.isValidMove(2, 3)); // Forward
-        assertTrue(king.isValidMove(2, 4)); // Diagonal
-        assertTrue(king.isValidMove(3, 2)); // Left
-        assertTrue(king.isValidMove(3, 4)); // Right
-        assertTrue(king.isValidMove(4, 2)); // Diagonal
-        assertTrue(king.isValidMove(4, 3)); // Backward
-        assertTrue(king.isValidMove(4, 4)); // Diagonal
+        assertTrue(king.isValidMove(2, 2));
+        assertTrue(king.isValidMove(2, 3));
+        assertTrue(king.isValidMove(2, 4));
+        assertTrue(king.isValidMove(3, 2));
+        assertTrue(king.isValidMove(3, 4));
+        assertTrue(king.isValidMove(4, 2));
+        assertTrue(king.isValidMove(4, 3));
+        assertTrue(king.isValidMove(4, 4));
     }
 
     @Test
     public void testInvalidMoves() {
-        // test moves more than one square
         assertFalse(king.isValidMove(1, 1));
         assertFalse(king.isValidMove(3, 5));
         assertFalse(king.isValidMove(5, 3));
 
-        // test knight-like moves
         assertFalse(king.isValidMove(5, 4));
         assertFalse(king.isValidMove(1, 2));
     }
@@ -51,7 +48,7 @@ public class KingTest {
         board.setPieceAt(1, 3, new Queen("black", 1, 3, board));
         assertTrue(board.isKingInCheck("white"));
         assertFalse(king.isValidMove(3, 3));
-        assertTrue(king.isValidMove(2, 3)); // capture queen
-        assertTrue(king.isValidMove(4, 3)); // move away
+        assertTrue(king.isValidMove(2, 3));
+        assertTrue(king.isValidMove(4, 3));
     }
 }

@@ -1,6 +1,4 @@
 package com.portablegame.testing;
-
-
 import com.portablegame.main.model.Board;
 import com.portablegame.main.model.King;
 import com.portablegame.main.model.Knight;
@@ -20,11 +18,10 @@ public class GameMechanicsTest {
 
     @Test
     public void testCheckDetection() {
-        // Setup check scenario
-        board.setPieceAt(6, 4, null); // Remove white pawn
-        board.setPieceAt(1, 3, null); // Remove black pawn
-        board.setPieceAt(0, 3, null); // Remove black queen
-        board.setPieceAt(3, 4, new Queen("black", 3, 4, board)); // Black queen attacks white king
+        board.setPieceAt(6, 4, null);
+        board.setPieceAt(1, 3, null);
+        board.setPieceAt(0, 3, null);
+        board.setPieceAt(3, 4, new Queen("black", 3, 4, board));
 
         assertTrue(board.isKingInCheck("white"));
         assertFalse(board.isKingInCheck("black"));
@@ -32,7 +29,6 @@ public class GameMechanicsTest {
 
     @Test
     public void testCheckmate() {
-        // Setup checkmate scenario (Fool's mate)
         board.tryMove("f2", "f3", null);
         board.tryMove("e7", "e5", null);
         board.tryMove("g2", "g4", null);

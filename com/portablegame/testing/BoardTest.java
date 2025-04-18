@@ -16,7 +16,6 @@ public class BoardTest {
 
     @Test
     public void testInitialBoardSetup() {
-        // Test that pieces are in correct starting positions
         assertTrue(board.getPieceAt(0, 0) instanceof Rook);
         assertTrue(board.getPieceAt(0, 1) instanceof Knight);
         assertTrue(board.getPieceAt(0, 2) instanceof Bishop);
@@ -64,7 +63,6 @@ public class BoardTest {
 
     @Test
     public void testPromotion() {
-        // Clear path and setup promotion scenario
         board.setPieceAt(1, 0, null);
         board.setPieceAt(6, 0, new Pawn("white", 6, 0, board));
 

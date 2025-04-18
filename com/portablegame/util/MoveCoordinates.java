@@ -26,7 +26,6 @@ public class MoveCoordinates {
         }
     }
 
-    // Add getters and setters if needed
     public String getFrom() { return from; }
     public String getTo() { return to; }
     public int getFromRow() { return fromRow; }
