@@ -46,29 +46,7 @@ Found 3 game(s) in file: games.pgn
 
 Processing game: Tournament Game - PlayerA vs PlayerB
 Initial board state:
-  a b c d e f g h
-8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ 8
-7 ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ 7
-6 . . . . . . . . 6
-5 . . . . . . . . 5
-4 . . . . . . . . 4
-3 . . . . . . . . 3
-2 ♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ 2
-1 ♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ 1
-  a b c d e f g h
-
-Move 1: e4 (white)
-Board after move:
-  a b c d e f g h
-8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ 8
-7 ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ 7
-6 . . . . . . . . 6
-5 . . . . . . . . 5
-4 . . . . ♙ . . . 4
-3 . . . . . . . . 3
-2 ♙ ♙ ♙ ♙ . ♙ ♙ ♙ 2
-1 ♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ 1
-  a b c d e f g h
+![image](https://github.com/user-attachments/assets/fc4e9bca-d91a-482d-ae4e-9cf4735a7c71)
 
 [...]
 
